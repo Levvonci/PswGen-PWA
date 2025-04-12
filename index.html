@@ -3,15 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimal Password Generator</title>
+    <meta name="theme-color" content="#3B82F6">
+    <meta name="description" content="Secure Password Generator - Create strong random passwords">
+    <title>Secure Password Generator</title>
+    <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
     <style>
         body {
             background-color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         .password-display {
             letter-spacing: 2px;
             font-family: 'Courier New', monospace;
+            word-break: break-all;
         }
         .copy-btn {
             transition: all 0.2s ease;
@@ -23,75 +31,154 @@
             transform: scale(0.95);
         }
         .strength-meter {
-            transition: width 0.3s ease;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+        .install-btn {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 50;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        @media (max-width: 640px) {
+            .install-btn {
+                bottom: 0.5rem;
+                right: 0.5rem;
+            }
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-6">
-        <h1 class="text-2xl font-medium text-gray-800 text-center mb-6">Password Generator</h1>
-        
-        <div class="mb-6 bg-gray-50 rounded-lg p-4 flex items-center justify-between">
-            <div class="password-display text-lg font-medium text-gray-800 overflow-x-auto" id="password">Click Generate</div>
-            <button class="copy-btn bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg" id="copyBtn">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+<body class="p-4">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden w-full">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Password Generator</h1>
+                <button id="refreshBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="mb-6 bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                <div class="password-display text-lg font-medium text-gray-800 overflow-x-auto" id="password">Click Generate</div>
+                <button class="copy-btn bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg" id="copyBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-1">
+                    <label for="length" class="text-gray-700">Length: <span id="lengthValue">12</span></label>
+                    <span class="text-sm text-gray-500">4-32</span>
+                </div>
+                <input type="range" id="length" min="4" max="32" value="12" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            </div>
+            
+            <div class="space-y-3 mb-6">
+                <div class="flex items-center">
+                    <input type="checkbox" id="uppercase" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                    <label for="uppercase" class="ml-2 text-gray-700">Uppercase Letters (A-Z)</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="lowercase" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                    <label for="lowercase" class="ml-2 text-gray-700">Lowercase Letters (a-z)</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="numbers" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                    <label for="numbers" class="ml-2 text-gray-700">Numbers (0-9)</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="symbols" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                    <label for="symbols" class="ml-2 text-gray-700">Symbols (!@#$%^&*)</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="excludeSimilar" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                    <label for="excludeSimilar" class="ml-2 text-gray-700">Exclude similar characters (i,l,1,L,o,0,O)</label>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>Password Strength</span>
+                    <span id="strengthText">Medium</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="strengthMeter" class="strength-meter h-2.5 rounded-full bg-yellow-500" style="width: 60%"></div>
+                </div>
+            </div>
+            
+            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
                 </svg>
+                Generate Password
             </button>
         </div>
-        
-        <div class="mb-4">
-            <div class="flex justify-between items-center mb-1">
-                <label for="length" class="text-gray-700">Length: <span id="lengthValue">12</span></label>
-            </div>
-            <input type="range" id="length" min="4" max="32" value="12" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-        </div>
-        
-        <div class="space-y-3 mb-6">
-            <div class="flex items-center">
-                <input type="checkbox" id="uppercase" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                <label for="uppercase" class="ml-2 text-gray-700">Uppercase Letters (A-Z)</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" id="lowercase" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                <label for="lowercase" class="ml-2 text-gray-700">Lowercase Letters (a-z)</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" id="numbers" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                <label for="numbers" class="ml-2 text-gray-700">Numbers (0-9)</label>
-            </div>
-            <div class="flex items-center">
-                <input type="checkbox" id="symbols" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                <label for="symbols" class="ml-2 text-gray-700">Symbols (!@#$%^&*)</label>
-            </div>
-        </div>
-        
-        <div class="mb-6">
-            <div class="flex justify-between text-sm text-gray-600 mb-1">
-                <span>Strength</span>
-                <span id="strengthText">Medium</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div id="strengthMeter" class="strength-meter h-2 rounded-full bg-yellow-500" style="width: 60%"></div>
-            </div>
-        </div>
-        
-        <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
-            Generate Password
-        </button>
     </div>
 
+    <button id="installBtn" class="install-btn hidden bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+    </button>
+
     <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registration successful');
+                }).catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+
+        // Install Prompt
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden');
+            
+            installBtn.addEventListener('click', () => {
+                installBtn.classList.add('hidden');
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    } else {
+                        console.log('User dismissed the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            });
+        });
+
+        window.addEventListener('appinstalled', () => {
+            installBtn.classList.add('hidden');
+            deferredPrompt = null;
+            console.log('PWA was installed');
+        });
+
+        // Password Generator Logic
         document.addEventListener('DOMContentLoaded', () => {
             const passwordDisplay = document.getElementById('password');
             const copyBtn = document.getElementById('copyBtn');
             const generateBtn = document.getElementById('generateBtn');
+            const refreshBtn = document.getElementById('refreshBtn');
             const lengthSlider = document.getElementById('length');
             const lengthValue = document.getElementById('lengthValue');
             const uppercaseCheckbox = document.getElementById('uppercase');
             const lowercaseCheckbox = document.getElementById('lowercase');
             const numbersCheckbox = document.getElementById('numbers');
             const symbolsCheckbox = document.getElementById('symbols');
+            const excludeSimilarCheckbox = document.getElementById('excludeSimilar');
             const strengthMeter = document.getElementById('strengthMeter');
             const strengthText = document.getElementById('strengthText');
             
@@ -100,6 +187,9 @@
             const lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
             const numberChars = '0123456789';
             const symbolChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+            
+            // Similar characters to exclude
+            const similarChars = 'il1Lo0O';
             
             // Update length display
             lengthSlider.addEventListener('input', () => {
@@ -111,9 +201,24 @@
                 let chars = '';
                 let password = '';
                 
-                if (uppercaseCheckbox.checked) chars += uppercaseChars;
-                if (lowercaseCheckbox.checked) chars += lowercaseChars;
-                if (numbersCheckbox.checked) chars += numberChars;
+                if (uppercaseCheckbox.checked) {
+                    chars += uppercaseChars;
+                    if (excludeSimilarCheckbox.checked) {
+                        chars = chars.replace(/[ILO]/g, '');
+                    }
+                }
+                if (lowercaseCheckbox.checked) {
+                    chars += lowercaseChars;
+                    if (excludeSimilarCheckbox.checked) {
+                        chars = chars.replace(/[ilo]/g, '');
+                    }
+                }
+                if (numbersCheckbox.checked) {
+                    chars += numberChars;
+                    if (excludeSimilarCheckbox.checked) {
+                        chars = chars.replace(/[10]/g, '');
+                    }
+                }
                 if (symbolsCheckbox.checked) chars += symbolChars;
                 
                 // If no character types are selected, use all
@@ -123,6 +228,10 @@
                     lowercaseCheckbox.checked = true;
                     numbersCheckbox.checked = true;
                     symbolsCheckbox.checked = true;
+                    
+                    if (excludeSimilarCheckbox.checked) {
+                        chars = chars.replace(/[ILOilo10]/g, '');
+                    }
                 }
                 
                 const length = parseInt(lengthSlider.value);
@@ -134,6 +243,11 @@
                 
                 passwordDisplay.textContent = password;
                 updateStrengthMeter(password);
+                
+                // Vibrate on generation (if supported)
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(50);
+                }
             }
             
             // Update password strength indicator
@@ -160,13 +274,13 @@
                 strengthMeter.style.width = `${strength}%`;
                 
                 if (strength < 40) {
-                    strengthMeter.className = 'strength-meter h-2 rounded-full bg-red-500';
+                    strengthMeter.className = 'strength-meter h-2.5 rounded-full bg-red-500';
                     strengthText.textContent = 'Weak';
                 } else if (strength < 70) {
-                    strengthMeter.className = 'strength-meter h-2 rounded-full bg-yellow-500';
+                    strengthMeter.className = 'strength-meter h-2.5 rounded-full bg-yellow-500';
                     strengthText.textContent = 'Medium';
                 } else {
-                    strengthMeter.className = 'strength-meter h-2 rounded-full bg-green-500';
+                    strengthMeter.className = 'strength-meter h-2.5 rounded-full bg-green-500';
                     strengthText.textContent = 'Strong';
                 }
             }
@@ -185,15 +299,34 @@
                     setTimeout(() => {
                         copyBtn.innerHTML = originalText;
                     }, 2000);
+                    
+                    // Show copied notification
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification('Password Copied', {
+                            body: 'Password has been copied to clipboard',
+                            icon: '/icons/icon-192x192.png'
+                        });
+                    }
                 });
+            }
+            
+            // Request notification permission
+            function requestNotificationPermission() {
+                if ('Notification' in window) {
+                    Notification.requestPermission().then(permission => {
+                        console.log('Notification permission:', permission);
+                    });
+                }
             }
             
             // Event listeners
             generateBtn.addEventListener('click', generatePassword);
+            refreshBtn.addEventListener('click', generatePassword);
             copyBtn.addEventListener('click', copyToClipboard);
             
             // Generate initial password
             generatePassword();
+            requestNotificationPermission();
         });
     </script>
 <p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=levvonci/password-generator" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
