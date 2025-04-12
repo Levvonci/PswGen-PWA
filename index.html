@@ -1,19 +1,200 @@
-<!doctype html>
-<html>
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<title>My static Space</title>
-		<link rel="stylesheet" href="style.css" />
-	</head>
-	<body>
-		<div class="card">
-			<h1>Welcome to your static Space!</h1>
-			<p>You can modify this app directly by editing <i>index.html</i> in the Files and versions tab.</p>
-			<p>
-				Also don't forget to check the
-				<a href="https://huggingface.co/docs/hub/spaces" target="_blank">Spaces documentation</a>.
-			</p>
-		</div>
-	</body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Password Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+        .password-display {
+            letter-spacing: 2px;
+            font-family: 'Courier New', monospace;
+        }
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            transform: scale(1.05);
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+        .strength-meter {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-6">
+        <h1 class="text-2xl font-medium text-gray-800 text-center mb-6">Password Generator</h1>
+        
+        <div class="mb-6 bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+            <div class="password-display text-lg font-medium text-gray-800 overflow-x-auto" id="password">Click Generate</div>
+            <button class="copy-btn bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg" id="copyBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+            </button>
+        </div>
+        
+        <div class="mb-4">
+            <div class="flex justify-between items-center mb-1">
+                <label for="length" class="text-gray-700">Length: <span id="lengthValue">12</span></label>
+            </div>
+            <input type="range" id="length" min="4" max="32" value="12" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+        
+        <div class="space-y-3 mb-6">
+            <div class="flex items-center">
+                <input type="checkbox" id="uppercase" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <label for="uppercase" class="ml-2 text-gray-700">Uppercase Letters (A-Z)</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="lowercase" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <label for="lowercase" class="ml-2 text-gray-700">Lowercase Letters (a-z)</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="numbers" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <label for="numbers" class="ml-2 text-gray-700">Numbers (0-9)</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="symbols" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <label for="symbols" class="ml-2 text-gray-700">Symbols (!@#$%^&*)</label>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <div class="flex justify-between text-sm text-gray-600 mb-1">
+                <span>Strength</span>
+                <span id="strengthText">Medium</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="strengthMeter" class="strength-meter h-2 rounded-full bg-yellow-500" style="width: 60%"></div>
+            </div>
+        </div>
+        
+        <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
+            Generate Password
+        </button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const passwordDisplay = document.getElementById('password');
+            const copyBtn = document.getElementById('copyBtn');
+            const generateBtn = document.getElementById('generateBtn');
+            const lengthSlider = document.getElementById('length');
+            const lengthValue = document.getElementById('lengthValue');
+            const uppercaseCheckbox = document.getElementById('uppercase');
+            const lowercaseCheckbox = document.getElementById('lowercase');
+            const numbersCheckbox = document.getElementById('numbers');
+            const symbolsCheckbox = document.getElementById('symbols');
+            const strengthMeter = document.getElementById('strengthMeter');
+            const strengthText = document.getElementById('strengthText');
+            
+            // Character sets
+            const uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
+            const numberChars = '0123456789';
+            const symbolChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+            
+            // Update length display
+            lengthSlider.addEventListener('input', () => {
+                lengthValue.textContent = lengthSlider.value;
+            });
+            
+            // Generate password
+            function generatePassword() {
+                let chars = '';
+                let password = '';
+                
+                if (uppercaseCheckbox.checked) chars += uppercaseChars;
+                if (lowercaseCheckbox.checked) chars += lowercaseChars;
+                if (numbersCheckbox.checked) chars += numberChars;
+                if (symbolsCheckbox.checked) chars += symbolChars;
+                
+                // If no character types are selected, use all
+                if (chars === '') {
+                    chars = uppercaseChars + lowercaseChars + numberChars + symbolChars;
+                    uppercaseCheckbox.checked = true;
+                    lowercaseCheckbox.checked = true;
+                    numbersCheckbox.checked = true;
+                    symbolsCheckbox.checked = true;
+                }
+                
+                const length = parseInt(lengthSlider.value);
+                
+                for (let i = 0; i < length; i++) {
+                    const randomIndex = Math.floor(Math.random() * chars.length);
+                    password += chars[randomIndex];
+                }
+                
+                passwordDisplay.textContent = password;
+                updateStrengthMeter(password);
+            }
+            
+            // Update password strength indicator
+            function updateStrengthMeter(password) {
+                let strength = 0;
+                const length = password.length;
+                
+                // Length contributes up to 50% of the strength
+                strength += Math.min(length / 32 * 50, 50);
+                
+                // Character variety contributes the remaining 50%
+                let varietyScore = 0;
+                if (password.match(/[A-Z]/)) varietyScore += 10;
+                if (password.match(/[a-z]/)) varietyScore += 10;
+                if (password.match(/[0-9]/)) varietyScore += 10;
+                if (password.match(/[^A-Za-z0-9]/)) varietyScore += 20;
+                
+                strength += varietyScore;
+                
+                // Cap at 100
+                strength = Math.min(strength, 100);
+                
+                // Update UI
+                strengthMeter.style.width = `${strength}%`;
+                
+                if (strength < 40) {
+                    strengthMeter.className = 'strength-meter h-2 rounded-full bg-red-500';
+                    strengthText.textContent = 'Weak';
+                } else if (strength < 70) {
+                    strengthMeter.className = 'strength-meter h-2 rounded-full bg-yellow-500';
+                    strengthText.textContent = 'Medium';
+                } else {
+                    strengthMeter.className = 'strength-meter h-2 rounded-full bg-green-500';
+                    strengthText.textContent = 'Strong';
+                }
+            }
+            
+            // Copy to clipboard
+            function copyToClipboard() {
+                if (passwordDisplay.textContent === 'Click Generate') return;
+                
+                navigator.clipboard.writeText(passwordDisplay.textContent).then(() => {
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    `;
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                    }, 2000);
+                });
+            }
+            
+            // Event listeners
+            generateBtn.addEventListener('click', generatePassword);
+            copyBtn.addEventListener('click', copyToClipboard);
+            
+            // Generate initial password
+            generatePassword();
+        });
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=levvonci/password-generator" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
 </html>
